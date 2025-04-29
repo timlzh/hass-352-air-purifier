@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .air352.const import LightState
+from .air352.const import LightState, SwitchState
 from .air352.device import AirPurifierDevice
 from .const import DOMAIN
 from .coordinator import AirPurifierCoordinator
@@ -61,7 +61,10 @@ class AirPurifierLight(CoordinatorEntity, LightEntity):
         """Return true if light is on."""
         if not self._coordinator._device.state:
             return False
-        return self._coordinator._device.state.light_state == LightState.ON
+        return (
+            self._coordinator._device.state.light_state == LightState.ON
+            and self._coordinator._device.state.switch_state == SwitchState.ON
+        )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
