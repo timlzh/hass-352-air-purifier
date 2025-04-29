@@ -1,0 +1,11 @@
+{
+    "domain": "hass_352_air_purifier",
+    "name": "352 Air Purifier",
+    "documentation": "https://github.com/timlzh/hass-352-air-purifier",
+    "dependencies": [],
+    "codeowners": ["@Timlzh"],
+    "requirements": [],
+    "version": "0.1.0",
+    "iot_class": "cloud_polling",
+    "config_flow": true
+}
