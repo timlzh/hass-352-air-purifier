@@ -52,7 +52,7 @@ class AirPurifierFan(CoordinatorEntity, FanEntity):
     """Representation of a 352 Air Purifier fan."""
 
     _attr_has_entity_name = True
-    _attr_name = "Fan"
+    _attr_name = None
     _attr_supported_features = (
         FanEntityFeature.SET_SPEED
         # | FanEntityFeature.PRESET_MODE
