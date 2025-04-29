@@ -1,3 +1,5 @@
+import asyncio
+
 import aiohttp
 
 from .const import AcMode, WindSpeed
@@ -42,7 +44,9 @@ class Air352API:
                     raise Exception(f"Login failed: {login_resp.msg}")
                 return login_resp
 
-    async def get_device_list(self) -> list[AirPurifierDevice]:
+    async def get_device_list(
+        self, async_lock: asyncio.Lock
+    ) -> list[AirPurifierDevice]:
         url = f"{self.EXT_BASE_URL}/api2/device/getDeviceList"
 
         data = {
@@ -69,6 +73,7 @@ class Air352API:
                                 device["deviceName"],
                                 device["deviceType"],
                                 device["companyCode"],
+                                async_lock,
                             )
                         )
 
@@ -98,7 +103,7 @@ if __name__ == "__main__":
         try:
             login_response = await api.login_by_pwd()
             print("Login successful:", login_response)
-            devices = await api.get_device_list()
+            devices = await api.get_device_list(asyncio.Lock())
             print("Devices:", devices)
             device = devices[0]
             await device.turn_on()

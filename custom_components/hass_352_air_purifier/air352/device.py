@@ -17,6 +17,7 @@ class AirPurifierDevice:
     deviceType: str
     companyCode: str
     packageIndex: int = 0
+    socket_lock: asyncio.Lock
 
     state: DeviceState | None = None
 
@@ -27,12 +28,14 @@ class AirPurifierDevice:
         deviceName: str,
         deviceType: str,
         companyCode: str,
+        socket_lock: asyncio.Lock,
     ):
         self.authCode = authCode
         self.macAddress = macAddress
         self.deviceName = deviceName
         self.deviceType = deviceType
         self.companyCode = companyCode
+        self.socket_lock = socket_lock
 
     def assemble_command(self, payload: bytes) -> bytes:
         result = bytearray()
@@ -137,9 +140,9 @@ class AirPurifierDevice:
             self.build_ac_mode(acMode),
         )
 
-    @staticmethod
     @asynccontextmanager
     async def send_and_handle(
+        self,
         loop: asyncio.AbstractEventLoop,
         handler: Callable[[], asyncio.DatagramProtocol],
         data: bytes,
@@ -148,25 +151,26 @@ class AirPurifierDevice:
         timeout: int = 5,
     ):
         """Send a UDP message and handle the response."""
-        transport = protocol = sock = None
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.setblocking(False)
-            sock.bind(srcAddr)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        async with self.socket_lock:
+            transport = protocol = sock = None
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.setblocking(False)
+                sock.bind(srcAddr)
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-            transport, protocol = await loop.create_datagram_endpoint(
-                handler, sock=sock
-            )
-            transport.sendto(data, destAddr)
+                transport, protocol = await loop.create_datagram_endpoint(
+                    handler, sock=sock
+                )
+                transport.sendto(data, destAddr)
 
-            async with async_timeout.timeout(timeout):
-                yield (transport, protocol)
-        finally:
-            if transport and protocol:
-                transport.close()
-            if sock:
-                sock.close()
+                async with async_timeout.timeout(timeout):
+                    yield (transport, protocol)
+            finally:
+                if transport and protocol:
+                    transport.close()
+                if sock:
+                    sock.close()
 
     @staticmethod
     async def send(
@@ -177,12 +181,17 @@ class AirPurifierDevice:
     ):
         """Send a UDP message."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(timeout)
-        sock.setblocking(False)
-        sock.bind(srcAddr)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         try:
+            sock.settimeout(timeout)
+            sock.setblocking(False)
+            sock.bind(srcAddr)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             sock.sendto(data, destAddr)
             await asyncio.sleep(0.1)
         finally:
             sock.close()
+
+    async def send_with_lock(self, data: bytes):
+        """Send a UDP message with lock."""
+        async with self.socket_lock:
+            await self.send(data)

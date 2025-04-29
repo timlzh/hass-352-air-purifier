@@ -17,7 +17,7 @@ from homeassistant.util.percentage import (
     ranged_value_to_percentage,
 )
 
-from .air352.const import SwitchState, WindSpeed
+from .air352.const import AcOnOff, SwitchState, WindSpeed
 from .air352.device import AirPurifierDevice
 from .const import (
     ATTR_AIR_QUALITY,
@@ -126,7 +126,7 @@ class AirPurifierFan(CoordinatorEntity, FanEntity):
         **kwargs: Any,
     ) -> None:
         """Turn on the fan."""
-        await self._device.turn_on()
+        await self._device.send_with_lock(self._device.build_ac_on_off(AcOnOff.ON))
         await self.coordinator.async_request_refresh()
         await asyncio.sleep(1)
         if percentage is not None:
@@ -136,13 +136,15 @@ class AirPurifierFan(CoordinatorEntity, FanEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the fan."""
-        await self._device.turn_off()
+        await self._device.send_with_lock(self._device.build_ac_on_off(AcOnOff.OFF))
         await self.coordinator.async_request_refresh()
 
     async def async_set_percentage(self, percentage: int) -> None:
         """Set the speed of the fan."""
-        await self._device.set_wind_speed(
-            WindSpeed(math.ceil(percentage_to_ranged_value((1, 6), percentage)))
+        await self._device.send_with_lock(
+            self._device.build_wind_speed(
+                WindSpeed(math.ceil(percentage_to_ranged_value((1, 6), percentage)))
+            )
         )
         await self.coordinator.async_request_refresh()
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -28,7 +29,8 @@ async def async_setup_entry(
     await api.login_by_pwd()
     _LOGGER.debug(f"Login successful, token {api.token}")
 
-    devices = await api.get_device_list()
+    hass.data[DOMAIN]["lock"] = async_lock = asyncio.Lock()
+    devices = await api.get_device_list(async_lock)
     hass.data[DOMAIN]["devices"] = devices
     hass.data[DOMAIN]["coordinators"] = {}
     _LOGGER.debug(f"Devices: {devices}")
