@@ -17,7 +17,7 @@ from homeassistant.util.percentage import (
     ranged_value_to_percentage,
 )
 
-from .air352.const import AcMode, SwitchState, WindSpeed
+from .air352.const import SwitchState, WindSpeed
 from .air352.device import AirPurifierDevice
 from .const import (
     ATTR_AIR_QUALITY,
@@ -52,10 +52,10 @@ class AirPurifierFan(CoordinatorEntity, FanEntity):
     """Representation of a 352 Air Purifier fan."""
 
     _attr_has_entity_name = True
-    _attr_name = None
+    _attr_name = "Fan"
     _attr_supported_features = (
         FanEntityFeature.SET_SPEED
-        | FanEntityFeature.PRESET_MODE
+        # | FanEntityFeature.PRESET_MODE
         | FanEntityFeature.TURN_ON
         | FanEntityFeature.TURN_OFF
     )
@@ -95,17 +95,17 @@ class AirPurifierFan(CoordinatorEntity, FanEntity):
         """Return the number of speeds the fan supports."""
         return len(WindSpeed._member_names_)
 
-    @property
-    def preset_modes(self) -> list[str]:
-        """Return the list of available preset modes."""
-        return ["auto", "sleep", "fast", "custom"]
+    # @property
+    # def preset_modes(self) -> list[str]:
+    #     """Return the list of available preset modes."""
+    #     return ["auto", "sleep", "fast", "custom"]
 
-    @property
-    def preset_mode(self) -> str | None:
-        """Return the current preset mode."""
-        if not self._device.state:
-            return None
-        return self._device.state.ac_mode.name.lower()
+    # @property
+    # def preset_mode(self) -> str | None:
+    #     """Return the current preset mode."""
+    #     if not self._device.state:
+    #         return None
+    #     return self._device.state.ac_mode.name.lower()
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -146,16 +146,15 @@ class AirPurifierFan(CoordinatorEntity, FanEntity):
         )
         await self.coordinator.async_request_refresh()
 
-    async def async_set_preset_mode(self, preset_mode: str) -> None:
-        """Set the preset mode of the fan."""
-        await self._device.set_ac_mode(acMode=AcMode[preset_mode.upper()])
-        self.__attr_preset_mode = preset_mode
-        await self.coordinator.async_request_refresh()
+    # async def async_set_preset_mode(self, preset_mode: str) -> None:
+    #     """Set the preset mode of the fan."""
+    #     await self._device.set_ac_mode(acMode=AcMode[preset_mode.upper()])
+    #     self.__attr_preset_mode = preset_mode
+    #     await self.coordinator.async_request_refresh()
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._attr_name = self._device.deviceName
         self._attr_percentage = (
             ranged_value_to_percentage((1, 6), self._device.state.wind_speed.value)
             if self._device.state
